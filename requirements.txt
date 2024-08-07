@@ -1,0 +1,7 @@
+datasets==2.20.0
+lm_eval==0.3.0
+numpy==2.0.1
+pandas==2.2.2
+setuptools==69.5.1
+torch==2.3.1
+transformers==4.36.2
