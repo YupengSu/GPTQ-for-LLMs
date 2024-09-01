@@ -105,6 +105,11 @@ def quant_gptq(args, model, tokenizer, device=torch.device("cuda:0")):
                 percdamp=args.percdamp, groupsize=args.groupsize, actorder=args.act_order, static_groups=args.static_groups
             )
             quantizers['model.layers.%d.%s' % (i, name)] = wrapped_layers[name].quantizer
+            scale = wrapped_layers[name].quantizer.scale
+            zero = wrapped_layers[name].quantizer.zero
+            weight = layer[name].weight.data
+            print(f"layer {name} scale: {scale.shape} zero: {zero.shape}")
+            print(f"layer {name} weight: {weight.shape}")
             wrapped_layers[name].free()
 
         for j in range(args.nsamples):

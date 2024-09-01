@@ -28,6 +28,7 @@ class GPTQ:
         self.columns = W.shape[1]
         self.H = torch.zeros((self.columns, self.columns), device=self.dev)
         self.nsamples = 0
+        self.groups = []
 
     def add_batch(self, inp, out):
         if DEBUG:
@@ -88,12 +89,11 @@ class GPTQ:
         # 如果启用静态分组
         if static_groups:
             import copy
-            groups = []
             # 按组大小分割权重，为每组找到量化参数
             for i in range(0, self.columns, groupsize):
                 quantizer = copy.deepcopy(self.quantizer)
                 quantizer.find_params(W[:, i:(i + groupsize)], weight=True)
-                groups.append(quantizer)
+                self.groups.append(quantizer)
 
         # 如果启用激活顺序
         if actorder:
@@ -148,7 +148,7 @@ class GPTQ:
                         idx = i1 + i
                         if actorder:
                             idx = perm[idx]
-                        self.quantizer = groups[idx // groupsize]
+                        self.quantizer = self.groups[idx // groupsize]
 
                 # 量化当前列
                 q = quantize(

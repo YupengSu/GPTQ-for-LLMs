@@ -56,6 +56,10 @@ if __name__ == '__main__':
         help='Groupsize to use for quantization; default uses full row.'
     )
     parser.add_argument(
+        '--method', type=str, default='gptq',
+        help='Method to use for quantization.'
+    )
+    parser.add_argument(
         '--sym', action='store_true',
         help='Whether to perform symmetric quantization.'
     )
@@ -101,18 +105,24 @@ if __name__ == '__main__':
     
     model = get_llm(args.model)
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=False)
+    print(f"CUDA memory allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+    tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=False, trust_remote_code=True)
     device = torch.device("cuda:0")
     
     if 'llama' in model_name:
-        from lib.llama import quant_gptq, llm_pack3
+        from lib.llama import quant_gptq, quant_minmax, llm_pack3
     elif 'cogvlm' in model_name:
-        from lib.cogvlm import quant_gptq, llm_pack3
+        from lib.cogvlm import quant_gptq, quant_minmax, llm_pack3
     elif 'internvl' in model_name:
-        from lib.internvl import quant_gptq, llm_pack3
+        from lib.internvl import quant_gptq, quant_minmax, llm_pack3
+    elif 'glm' in model_name:
+        from lib.chatglm import quant_gptq, quant_minmax, llm_pack3
 
     if args.wbits < 16:
-        quantizers = quant_gptq(args, model, tokenizer, device)
+        if args.method == 'gptq':
+            quantizers = quant_gptq(args, model, tokenizer, device)
+        elif args.method == 'minmax':
+            quantizers = quant_minmax(args, model, tokenizer, device)
     
     if args.save_model:
         model.save_pretrained(args.save_model)
